@@ -162,7 +162,7 @@ def show_exam_result(request, course_id, submission_id):
     context['course'] = course
     context['submission'] = submission
     context['total_score'] = total_score
-    return render(request, 'onlinecourse/exam_result.html', context)
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
 
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
 # you may implement it based on the following logic:
