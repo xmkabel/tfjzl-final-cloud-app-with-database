@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 # <HINT> Import any new Models here
-from .models import Course, Enrollment
+from .models import Course, Enrollment, Question, Choice, Submission
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -123,6 +123,46 @@ def extract_answers(request):
            submitted_anwsers.append(choice_id)
    return submitted_anwsers
 
+
+def submit(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    user = request.user
+    # Get enrollment record
+    enrollment = get_object_or_404(Enrollment, user=user, course=course)
+    
+    if request.method == 'POST':
+        # Create a new submission object
+        submission = Submission.objects.create(enrollment=enrollment)
+        # Extract selected choice ids from the form
+        selected_ids = extract_answers(request)
+        # Add selected choices to submission
+        for choice_id in selected_ids:
+            choice = get_object_or_404(Choice, pk=choice_id)
+            submission.choices.add(choice)
+        
+        return redirect('onlinecourse:show_exam_result', course_id=course.id, submission_id=submission.id)
+
+def show_exam_result(request, course_id, submission_id):
+    context = {}
+    course = get_object_or_404(Course, pk=course_id)
+    submission = get_object_or_404(Submission, pk=submission_id)
+    
+    # Calculate the score
+    total_score = 0
+    # Get all questions for the course
+    questions = Question.objects.filter(course=course)
+    # Get IDs of choices the user selected
+    selected_ids = [choice.id for choice in submission.choices.all()]
+    
+    for question in questions:
+        # Use the model method we created in Task 1
+        if question.is_get_score(selected_ids):
+            total_score += question.grade
+            
+    context['course'] = course
+    context['submission'] = submission
+    context['total_score'] = total_score
+    return render(request, 'onlinecourse/exam_result.html', context)
 
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
 # you may implement it based on the following logic:
